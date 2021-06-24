@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs;
 
 pub struct Config {
-    pub search: String,
+    pub query: String,
     pub path: String,
 }
 
@@ -11,10 +11,10 @@ impl Config {
         if args.len() < 3 {
             return Err("Arguments missing");
         }
-        let search = args[1].clone();
+        let query = args[1].clone();
         let path = args[2].clone();
 
-        Ok(Config { search, path })
+        Ok(Config { query, path })
     }
 }
 

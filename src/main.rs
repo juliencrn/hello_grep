@@ -10,9 +10,6 @@ fn main() {
         process::exit(1);
     });
 
-    println!("Search query: {}", config.search);
-    println!("Path to file: {}", config.path);
-
     if let Err(e) = mini_grep::run(config) {
         println!("Error in execution: {}", e);
         process::exit(1);
