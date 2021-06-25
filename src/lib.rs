@@ -1,9 +1,8 @@
+use ansi_term::Colour::Green;
 use std::error::Error;
-use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 use structopt::StructOpt;
-
 
 #[derive(Debug, StructOpt)]
 pub struct Cli {
@@ -14,6 +13,23 @@ pub struct Cli {
 
     #[structopt(short = "i", help = "Make search case insensitive")]
     pub case_insensitive: bool,
+}
+
+#[derive(Debug)]
+pub struct Line {
+    number: usize,
+    content: String,
+}
+
+// TODO: Rename in Match and create static method matches
+impl Line {
+    pub fn new(number: usize, content: String) -> Line {
+        Line { number, content }
+    }
+
+    pub fn fmt(&self) -> String {
+        format!("{}: {}", Green.paint(self.number.to_string()), self.content)
+    }
 }
 
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
@@ -31,31 +47,31 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
     }
 
     for line in results {
-        println!("{}", line)
+        println!("{}", line.fmt())
     }
 
     Ok(())
 }
 
-pub fn search_case_sensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut results: Vec<&'a str> = vec![];
+pub fn search_case_sensitive(query: &str, content: &str) -> Vec<Line> {
+    let mut results: Vec<Line> = vec![];
 
-    for line in content.lines() {
+    for (index, line) in content.lines().enumerate() {
         if line.contains(query) {
-            results.push(line);
+            results.push(Line::new(index, line.to_string()));
         }
     }
 
     results
 }
 
-pub fn search_case_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut results: Vec<&'a str> = vec![];
+pub fn search_case_insensitive(query: &str, content: &str) -> Vec<Line> {
+    let mut results: Vec<Line> = vec![];
     let query = query.to_lowercase();
 
-    for line in content.lines() {
+    for (index, line) in content.lines().enumerate() {
         if line.to_lowercase().contains(&query) {
-            results.push(line);
+            results.push(Line::new(index, line.to_string()));
         }
     }
 
@@ -90,10 +106,12 @@ safe, fast, productive.
 Pick three.
 Duct tape.";
 
-        assert_eq!(
-            vec!["safe, fast, productive."],
-            search_case_sensitive(pattern, content)
-        );
+        let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
+        let result = search_case_sensitive(pattern, content);
+       
+        for i in 0..result.len() {
+            assert_eq!(expected[i].content, result[i].content)
+        }
     }
 
     #[test]
@@ -105,9 +123,14 @@ safe, fast, productive.
 Pick three.
 Trust me.";
 
-        assert_eq!(
-            vec!["Rust:", "Trust me."],
-            search_case_insensitive(pattern, content)
-        );
+        let expected = vec![
+            Line::new(1, "Rust:".to_string()),
+            Line::new(4, "Trust me.".to_string())
+        ];
+        let result = search_case_sensitive(pattern, content);
+       
+        for i in 0..result.len() {
+            assert_eq!(expected[i].content, result[i].content)
+        }
     }
 }
