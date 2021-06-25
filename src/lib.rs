@@ -1,44 +1,32 @@
-use std::env;
 use std::error::Error;
 use std::fmt::Debug;
 use std::fs;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
-#[derive(Debug)]
-pub struct Config {
-    pub query: String,
-    pub path: String,
-    pub case_sensitive: bool,
+
+#[derive(Debug, StructOpt)]
+pub struct Cli {
+    pub pattern: String,
+
+    #[structopt(parse(from_os_str))]
+    pub path: PathBuf,
+
+    #[structopt(short = "i", help = "Make search case insensitive")]
+    pub case_insensitive: bool,
 }
 
-impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("Arguments missing");
-        }
-        let query = args[1].clone();
-        let path = args[2].clone();
-        // TODO: Test if is it 1 or true, not only unset
-        // TODO: To be able to pass a CLI argument like -i
-        let case_sensitive = env::var("MINIGREP_CASE_INSENSITIVE").is_err();
-
-        Ok(Config {
-            query,
-            path,
-            case_sensitive,
-        })
-    }
-}
-
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
     let content = fs::read_to_string(config.path)?;
 
-    let results = if config.case_sensitive {
-        search_case_sensitive(&config.query, &content)
+    let results = if config.case_insensitive {
+        search_case_insensitive(&config.pattern, &content)
     } else {
-        search_case_insensitive(&config.query, &content)
+        search_case_sensitive(&config.pattern, &content)
     };
 
     if results.len() < 1 {
+        // TODO: Don't print in code, return Err instead
         println!("There is no result ¯\\(ツ)/¯")
     }
 
@@ -78,29 +66,12 @@ pub fn search_case_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str
 mod tests {
     use super::*;
 
-    fn create_test_config() -> Config {
-        let args: Vec<String> = vec![
-            String::from("path/to/bin"),
-            String::from("run"),
-            String::from("./src/lib.rs"),
-        ];
-
-        Config::new(&args).unwrap()
-    }
-
-    #[test]
-    fn create_config() {
-        let config = create_test_config();
-
-        assert_eq!(config.query, "run");
-        assert_eq!(config.path, "./src/lib.rs");
-    }
-
-    #[test]
-    #[should_panic]
-    fn create_config_without_args() {
-        let args: Vec<String> = vec![];
-        Config::new(&args).unwrap();
+    fn create_test_config() -> Cli {
+        Cli {
+            pattern: String::from("run"),
+            path: PathBuf::from("./src/lib.rs"),
+            case_insensitive: false,
+        }
     }
 
     #[test]
@@ -112,7 +83,7 @@ mod tests {
 
     #[test]
     fn case_sensitive() {
-        let query = "duct";
+        let pattern = "duct";
         let content = "\
 Rust:
 safe, fast, productive.
@@ -121,13 +92,13 @@ Duct tape.";
 
         assert_eq!(
             vec!["safe, fast, productive."],
-            search_case_sensitive(query, content)
+            search_case_sensitive(pattern, content)
         );
     }
 
     #[test]
     fn case_insensitive() {
-        let query = "rUsT";
+        let pattern = "rUsT";
         let content = "\
 Rust:
 safe, fast, productive.
@@ -136,7 +107,7 @@ Trust me.";
 
         assert_eq!(
             vec!["Rust:", "Trust me."],
-            search_case_insensitive(query, content)
+            search_case_insensitive(pattern, content)
         );
     }
 }
