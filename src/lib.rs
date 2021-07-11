@@ -1,4 +1,5 @@
-use ansi_term::Colour::Green;
+use ansi_term::Colour::{Green, Red};
+use regex::{Captures, RegexBuilder};
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
@@ -13,6 +14,9 @@ pub struct Cli {
 
     #[structopt(short = "i", help = "Make search case insensitive")]
     pub case_insensitive: bool,
+
+    #[structopt(short = "n", help = "Show line number")]
+    pub num: bool,
 }
 
 #[derive(Debug)]
@@ -27,8 +31,17 @@ impl Line {
         Line { number, content }
     }
 
-    pub fn fmt(&self) -> String {
-        format!("{}: {}", Green.paint(self.number.to_string()), self.content)
+    // TODO: There are too many params, better to just pass Cli object
+    pub fn fmt(&self, pattern: &str, case_insensitive: bool, show_num: bool) -> String {
+        let mut formatted_line = colorize_match(&self.content, pattern, case_insensitive);
+        formatted_line = format!("\t{}", formatted_line.trim_end());
+
+        if show_num {
+            let line_number = Green.paint(self.number.to_string());
+            format!("{}: {}", line_number, &formatted_line)
+        } else {
+            format!("{}", &formatted_line,)
+        }
     }
 }
 
@@ -47,10 +60,22 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
     }
 
     for line in results {
-        println!("{}", line.fmt())
+        let pretty_line = line.fmt(&config.pattern, config.case_insensitive, config.num);
+        println!("{}", pretty_line)
     }
 
     Ok(())
+}
+
+pub fn colorize_match(line: &str, pattern: &str, case_insensitive: bool) -> String {
+    let regex = RegexBuilder::new(&pattern)
+        .case_insensitive(case_insensitive)
+        .build()
+        .expect("Invalid Regex");
+
+    let colorize_pattern = |caps: &Captures| format!("{}", Red.paint(&caps[0]));
+
+    regex.replace_all(line, colorize_pattern).to_string()
 }
 
 pub fn search_case_sensitive(query: &str, content: &str) -> Vec<Line> {
@@ -87,6 +112,7 @@ mod tests {
             pattern: String::from("run"),
             path: PathBuf::from("./src/lib.rs"),
             case_insensitive: false,
+            num: true,
         }
     }
 
@@ -108,7 +134,7 @@ Duct tape.";
 
         let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
         let result = search_case_sensitive(pattern, content);
-       
+
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
         }
@@ -125,10 +151,10 @@ Trust me.";
 
         let expected = vec![
             Line::new(1, "Rust:".to_string()),
-            Line::new(4, "Trust me.".to_string())
+            Line::new(4, "Trust me.".to_string()),
         ];
         let result = search_case_sensitive(pattern, content);
-       
+
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
         }
