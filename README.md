@@ -1,23 +1,24 @@
-### ⚠️ W.I.P.
+<h3 align="center">
+    ⚠️  W.I.P.
+</h3>
 <br /> 
+
+
+# Hello, Grep!
+This personal learning project is just another grep clone, written in Rust.
+
+<br />
 
 ![alt](./assets/screenshot.png)
 
-# Hello, Grep!
-
-This personal learning project is just another grep clone, written in Rust.
-
-<!-- GETTING STARTED -->
 ## Getting Started
-
 To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
-
-This is a rust project, so you need have rust working on your machine. 
+- This is a `rust` project, so you need have rust working on your machine. 
+- We will use `git` to download the repository.
 
 ### Installation
-
 1. Clone the repo
    ```sh
    git clone https://github.com/juliencrn/hello_grep.git
@@ -31,16 +32,12 @@ This is a rust project, so you need have rust working on your machine.
    cargo build --release # Production build
    ```
 
-
-
-<!-- USAGE EXAMPLES -->
 ## Usage
-
 ```sh
 hello_grep 0.1.0
 
 USAGE:
-    mini_grep [FLAGS] <pattern> [path]...
+    hello_grep [FLAGS] <pattern> [path]...
 
 FLAGS:
     -i               Make search case insensitive
@@ -55,9 +52,7 @@ ARGS:
 ```
 
 ## License
-
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Acknowledgements
-
 * [Rust Book](https://doc.rust-lang.org/book/)
