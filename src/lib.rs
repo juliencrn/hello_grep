@@ -13,14 +13,14 @@ pub struct Cli {
     #[structopt(parse(from_os_str))]
     pub path: Vec<PathBuf>,
 
-    #[structopt(short = "i", help = "Make search case insensitive")]
+    #[structopt(short = "i", long = "insensitive", help = "Make search case insensitive")]
     pub case_insensitive: bool,
 
-    #[structopt(short = "n", help = "Show line number")]
-    pub num: bool,
+    #[structopt(short = "n", long = "line-number", help = "Show line number")]
+    pub show_line_number: bool,
 
-    #[structopt(long = "color", help = "Activate color in output")]
-    pub color: bool,
+    #[structopt(short = "c", long = "color", help = "Activate color in output")]
+    pub display_color: bool,
 }
 
 impl Cli {
@@ -36,7 +36,7 @@ impl Cli {
     }
 
     fn colorize(&self, color: Colour, text: &str) -> String {
-        if self.color {
+        if self.display_color {
             format!("{}", color.paint(text))
         } else {
             text.to_string()
@@ -79,7 +79,7 @@ impl Line {
                 .trim_end()
         );
 
-        if config.num {
+        if config.show_line_number {
             let line_number = config.colorize(Green, &self.number.to_string());
             format!("{}: {}", line_number, formatted_line)
         } else {
@@ -137,8 +137,8 @@ mod tests {
             pattern: String::from(pattern),
             path: vec![PathBuf::from("./src/lib.rs")],
             case_insensitive,
-            num: true,
-            color: false
+            show_line_number: true,
+            display_color: false
         }
     }
 

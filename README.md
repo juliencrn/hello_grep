@@ -40,11 +40,11 @@ USAGE:
     hello_grep [FLAGS] <pattern> [path]...
 
 FLAGS:
-    -i               Make search case insensitive
-        --color      Activate color in output
-    -h, --help       Prints help information
-    -n               Show line number
-    -V, --version    Prints version information
+    -i, --insensitive    Make search case insensitive
+    -c, --color          Activate color in output
+    -h, --help           Prints help information
+    -n, --line-number    Show line number
+    -V, --version        Prints version information
 
 ARGS:
     <pattern>
