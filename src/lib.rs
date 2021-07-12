@@ -46,9 +46,11 @@ impl Line {
 }
 
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
-    let mut has_match = false;
+    let mut file_count: usize = 0;
+    let mut match_count: usize = 0;
 
     if config.path.len() == 0 {
+        // TODO: Should throw an error and stop the program
         println!("No files found");
     }
 
@@ -64,7 +66,8 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
 
         if results.len() > 0 {
             println!("\n{}", Cyan.paint(pathname));
-            has_match = true;
+            file_count += 1;
+            match_count = match_count + results.len();
         }
 
         for line in results {
@@ -73,7 +76,12 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if !has_match {
+    if match_count > 0 {
+        println!(
+            "\n{} match(es) found in {} file(s).",
+            match_count, file_count
+        );
+    } else {
         println!("There is no result ¯\\(ツ)/¯")
     }
 
