@@ -1,4 +1,4 @@
-use ansi_term::Colour::{Green, Red};
+use ansi_term::Colour::{Cyan, Green, Red};
 use regex::{Captures, RegexBuilder};
 use std::error::Error;
 use std::fs;
@@ -10,7 +10,7 @@ pub struct Cli {
     pub pattern: String,
 
     #[structopt(parse(from_os_str))]
-    pub path: PathBuf,
+    pub path: Vec<PathBuf>,
 
     #[structopt(short = "i", help = "Make search case insensitive")]
     pub case_insensitive: bool,
@@ -25,7 +25,7 @@ pub struct Line {
     content: String,
 }
 
-// TODO: Rename in Match and create static method matches
+// TODO: Rename in Match and create static method "is (-i) matches -> bool"
 impl Line {
     pub fn new(number: usize, content: String) -> Line {
         Line { number, content }
@@ -46,22 +46,35 @@ impl Line {
 }
 
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
-    let content = fs::read_to_string(config.path)?;
+    let mut has_match = false;
 
-    let results = if config.case_insensitive {
-        search_case_insensitive(&config.pattern, &content)
-    } else {
-        search_case_sensitive(&config.pattern, &content)
-    };
-
-    if results.len() < 1 {
-        // TODO: Don't print in code, return Err instead
-        println!("There is no result ¯\\(ツ)/¯")
+    if config.path.len() == 0 {
+        println!("No files found");
     }
 
-    for line in results {
-        let pretty_line = line.fmt(&config.pattern, config.case_insensitive, config.num);
-        println!("{}", pretty_line)
+    for path in config.path {
+        let pathname = path.clone();
+        let pathname = pathname.to_str().unwrap();
+        let content = fs::read_to_string(path)?;
+        let results = if config.case_insensitive {
+            search_case_insensitive(&config.pattern, &content)
+        } else {
+            search_case_sensitive(&config.pattern, &content)
+        };
+
+        if results.len() > 0 {
+            println!("\n{}", Cyan.paint(pathname));
+            has_match = true;
+        }
+
+        for line in results {
+            let pretty_line = line.fmt(&config.pattern, config.case_insensitive, config.num);
+            println!("{}", pretty_line)
+        }
+    }
+
+    if !has_match {
+        println!("There is no result ¯\\(ツ)/¯")
     }
 
     Ok(())
@@ -110,7 +123,7 @@ mod tests {
     fn create_test_config() -> Cli {
         Cli {
             pattern: String::from("run"),
-            path: PathBuf::from("./src/lib.rs"),
+            path: vec![PathBuf::from("./src/lib.rs")],
             case_insensitive: false,
             num: true,
         }
