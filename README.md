@@ -21,7 +21,7 @@ This is a rust project, so you need have rust working on your machine.
 1. Clone the repo
    ```sh
    git clone https://github.com/juliencrn/hello_grep.git
-   cd mini_grep 
+   cd hello_grep 
    ```
 2. Compile and run
    ```sh
@@ -40,10 +40,11 @@ This is a rust project, so you need have rust working on your machine.
 hello_grep 0.1.0
 
 USAGE:
-    hello_grep [FLAGS] <pattern> [path]...
+    mini_grep [FLAGS] <pattern> [path]...
 
 FLAGS:
     -i               Make search case insensitive
+        --color      Activate color in output
     -h, --help       Prints help information
     -n               Show line number
     -V, --version    Prints version information
