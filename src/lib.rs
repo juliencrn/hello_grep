@@ -46,6 +46,13 @@ pub struct Cli {
         help = "Display match statistics at the end"
     )]
     pub stats: bool,
+
+    #[structopt(
+        short = "x",
+        long = "line-regexp",
+        help = "Select only those matches that exactly match the whole line"
+    )]
+    pub line_regexp: bool,
 }
 
 impl Cli {
@@ -57,11 +64,19 @@ impl Cli {
     }
 
     fn is_matches(&self, line: &str) -> bool {
-        let matches = self.get_regex().is_match(line);
-        if self.invert_match {
-            !matches
-        } else {
-            matches
+        match self.get_regex().find(line.trim()) {
+            Some(x) => {
+                if self.invert_match {
+                    return false;
+                }
+
+                if !self.line_regexp {
+                    return true;
+                }
+
+                x.start() == 0 && x.end() == line.trim().len()
+            }
+            None => self.invert_match,
         }
     }
 
@@ -179,6 +194,7 @@ mod tests {
             stats: false,
             count: false,
             invert_match: false,
+            line_regexp: false,
         }
     }
 
