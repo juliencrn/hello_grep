@@ -33,7 +33,7 @@ To get a local copy up and running follow these simple steps.
    ```
 
 ## Usage
-```sh
+```
 hello_grep 0.1.0
 
 USAGE:
@@ -61,7 +61,7 @@ ARGS:
 ```
 
 ## License
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.
 
 ## Acknowledgements
 * [Rust Book](https://doc.rust-lang.org/book/)
