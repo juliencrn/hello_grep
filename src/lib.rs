@@ -53,6 +53,14 @@ pub struct Cli {
         help = "Select only those matches that exactly match the whole line"
     )]
     pub line_regexp: bool,
+
+    #[structopt(
+        short = "m",
+        long = "max-count",
+        help = "Stop reading a file after NUM matching lines",
+        default_value = "1000"
+    )]
+    pub max: usize,
 }
 
 impl Cli {
@@ -136,6 +144,7 @@ impl Line {
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
     let mut file_count: usize = 0;
     let mut match_count: usize = 0;
+    let mut printed_count: usize = 0;
 
     if config.path.len() == 0 {
         // TODO: Should throw an error and stop the program
@@ -155,12 +164,22 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
             match_count = match_count + results.len();
 
             if config.count {
-                println!("{}: \t{}", pathname, results.len());
+                // Display only filenames
+                if printed_count < config.max {
+                    println!("{}: \t{}", pathname, results.len());
+                    printed_count += 1;
+                }
             } else {
-                println!("\n{}", config.colorize(Cyan, pathname));
+                // Display matches
+                if printed_count < config.max {
+                    println!("\n{}", config.colorize(Cyan, pathname));
+                }
 
                 for line in results {
-                    println!("{}", line.fmt_line(&config))
+                    if printed_count < config.max {
+                        println!("{}", line.fmt_line(&config));
+                        printed_count += 1;
+                    }
                 }
             }
         }
@@ -168,10 +187,19 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
 
     if match_count > 0 {
         if config.stats {
-            println!(
-                "\n{} match(es) found in {} file(s).",
-                match_count, file_count
-            );
+            if printed_count != match_count {
+                println!(
+                    "\n{} match(es) found (including {} hidden) in {} file(s).",
+                    match_count,
+                    match_count - printed_count,
+                    file_count
+                );
+            } else {
+                println!(
+                    "\n{} match(es) found in {} file(s).",
+                    match_count, file_count
+                );
+            }
         }
     } else {
         println!("There is no result ¯\\(ツ)/¯")
@@ -195,6 +223,7 @@ mod tests {
             count: false,
             invert_match: false,
             line_regexp: false,
+            max: 1000,
         }
     }
 
