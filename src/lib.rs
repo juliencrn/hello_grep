@@ -61,6 +61,13 @@ pub struct Cli {
         default_value = "1000"
     )]
     pub max: usize,
+
+    #[structopt(
+        short = "h",
+        long = "no-filename",
+        help = "Suppress the prefixing of file names on output. This is the default when there is only one file to search"
+    )]
+    pub no_filename: bool,
 }
 
 impl Cli {
@@ -142,16 +149,16 @@ impl Line {
 }
 
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
-    let mut file_count: usize = 0;
-    let mut match_count: usize = 0;
-    let mut printed_count: usize = 0;
-
     if config.path.len() == 0 {
         // TODO: Should throw an error and stop the program
         println!("No files found");
     }
 
+    let mut file_count: usize = 0;
+    let mut match_count: usize = 0;
+    let mut printed_count: usize = 0;
     let paths = &config.path.to_vec();
+    let hide_filename = config.no_filename || paths.len() == 1;
 
     for path in paths {
         let pathname = path.clone();
@@ -170,8 +177,8 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
                     printed_count += 1;
                 }
             } else {
-                // Display matches
-                if printed_count < config.max {
+                // Display matches (title then lines)
+                if printed_count < config.max && !hide_filename {
                     println!("\n{}", config.colorize(Cyan, pathname));
                 }
 
@@ -224,6 +231,7 @@ mod tests {
             invert_match: false,
             line_regexp: false,
             max: 1000,
+            no_filename: false,
         }
     }
 
