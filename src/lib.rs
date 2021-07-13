@@ -1,152 +1,12 @@
-use ansi_term::Colour;
-use ansi_term::Colour::{Cyan, Green, Red};
-use regex::{Captures, Regex, RegexBuilder};
+use ansi_term::Colour::Cyan;
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-pub struct Cli {
-    pub pattern: String,
+pub mod cli;
+pub mod line;
+pub mod search;
 
-    #[structopt(parse(from_os_str))]
-    pub path: Vec<PathBuf>,
-
-    #[structopt(
-        short = "i",
-        long = "ignore-case",
-        help = "Make search case insensitive"
-    )]
-    pub case_insensitive: bool,
-
-    #[structopt(short = "n", long = "line-number", help = "Show line number")]
-    pub show_line_number: bool,
-
-    #[structopt(long = "color", help = "Activate color in output")]
-    pub display_color: bool,
-
-    #[structopt(
-        short = "v",
-        long = "invert-match",
-        help = "Invert the sense of matching"
-    )]
-    pub invert_match: bool,
-
-    #[structopt(
-        short = "c",
-        long = "count",
-        help = "Suppress normal output; instead print a count of matching lines for each input file"
-    )]
-    pub count: bool,
-
-    #[structopt(
-        short = "s",
-        long = "stats",
-        help = "Display match statistics at the end"
-    )]
-    pub stats: bool,
-
-    #[structopt(
-        short = "x",
-        long = "line-regexp",
-        help = "Select only those matches that exactly match the whole line"
-    )]
-    pub line_regexp: bool,
-
-    #[structopt(
-        short = "m",
-        long = "max-count",
-        help = "Stop reading a file after NUM matching lines",
-        default_value = "1000"
-    )]
-    pub max: usize,
-
-    #[structopt(
-        short = "h",
-        long = "no-filename",
-        help = "Suppress the prefixing of file names on output. This is the default when there is only one file to search"
-    )]
-    pub no_filename: bool,
-}
-
-impl Cli {
-    fn get_regex(&self) -> Regex {
-        RegexBuilder::new(&self.pattern)
-            .case_insensitive(self.case_insensitive)
-            .build()
-            .expect("Invalid Regex")
-    }
-
-    fn is_matches(&self, line: &str) -> bool {
-        match self.get_regex().find(line.trim()) {
-            Some(x) => {
-                if self.invert_match {
-                    return false;
-                }
-
-                if !self.line_regexp {
-                    return true;
-                }
-
-                x.start() == 0 && x.end() == line.trim().len()
-            }
-            None => self.invert_match,
-        }
-    }
-
-    fn colorize(&self, color: Colour, text: &str) -> String {
-        if self.display_color {
-            format!("{}", color.paint(text))
-        } else {
-            text.to_string()
-        }
-    }
-
-    pub fn search(&self, content: &str) -> Vec<Line> {
-        let mut results: Vec<Line> = vec![];
-
-        for (index, line) in content.lines().enumerate() {
-            if self.is_matches(line) {
-                results.push(Line::new(index, line.to_string()));
-            }
-        }
-
-        results
-    }
-}
-
-#[derive(Debug)]
-pub struct Line {
-    number: usize,
-    content: String,
-}
-
-// TODO: Rename in Match and create static method "is (-i) matches -> bool"
-impl Line {
-    pub fn new(number: usize, content: String) -> Line {
-        Line { number, content }
-    }
-
-    pub fn fmt_line(&self, config: &Cli) -> String {
-        let regex = config.get_regex();
-        let colorize_pattern = |c: &Captures| format!("{}", config.colorize(Red, &c[0]));
-        let formatted_line = format!(
-            "\t{}",
-            regex
-                .replace_all(&self.content, colorize_pattern)
-                .to_string()
-                .trim_end()
-        );
-
-        if config.show_line_number {
-            let line_number = config.colorize(Green, &self.number.to_string());
-            format!("{}: {}", line_number, formatted_line)
-        } else {
-            format!("{}", formatted_line)
-        }
-    }
-}
+use self::cli::Cli;
 
 pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
     if config.path.len() == 0 {
@@ -164,7 +24,7 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
         let pathname = path.clone();
         let pathname = pathname.to_str().unwrap();
         let content = fs::read_to_string(path)?;
-        let results = config.search(&content);
+        let results = search::search(&config, &content);
 
         if results.len() > 0 {
             file_count += 1;
@@ -192,24 +52,23 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if match_count > 0 {
-        if config.stats {
-            if printed_count != match_count {
-                println!(
-                    "\n{} match(es) found (including {} hidden) in {} file(s).",
-                    match_count,
-                    match_count - printed_count,
-                    file_count
-                );
-            } else {
-                println!(
-                    "\n{} match(es) found in {} file(s).",
-                    match_count, file_count
-                );
-            }
+    if match_count == 0 {
+        // TODO: Should throw an error and stop the program
+        println!("There is no result ¯\\(ツ)/¯");
+    } else if config.stats {
+        if printed_count != match_count {
+            println!(
+                "\n{} match(es) found (including {} hidden) in {} file(s).",
+                match_count,
+                match_count - printed_count,
+                file_count
+            );
+        } else {
+            println!(
+                "\n{} match(es) found in {} file(s).",
+                match_count, file_count
+            );
         }
-    } else {
-        println!("There is no result ¯\\(ツ)/¯")
     }
 
     Ok(())
@@ -217,7 +76,10 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
+    use self::cli::Cli;
+    use self::line::Line;
     use super::*;
+    use std::path::PathBuf;
 
     fn create_test_config(pattern: &str, case_insensitive: bool) -> Cli {
         Cli {
@@ -252,7 +114,7 @@ Duct tape.";
 
         let config = create_test_config("duct", false);
         let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
-        let result = config.search(content);
+        let result = search::search(&config, content);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
@@ -272,7 +134,7 @@ Trust me.";
             Line::new(1, "Rust:".to_string()),
             Line::new(4, "Trust me.".to_string()),
         ];
-        let result = config.search(content);
+        let result = search::search(&config, content);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)

@@ -1,6 +1,6 @@
-use hello_grep::Cli;
-use structopt::StructOpt;
+use hello_grep::cli::Cli;
 use std::process;
+use structopt::StructOpt;
 
 fn main() {
     let config = Cli::from_args();
