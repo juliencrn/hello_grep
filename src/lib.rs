@@ -13,14 +13,39 @@ pub struct Cli {
     #[structopt(parse(from_os_str))]
     pub path: Vec<PathBuf>,
 
-    #[structopt(short = "i", long = "insensitive", help = "Make search case insensitive")]
+    #[structopt(
+        short = "i",
+        long = "ignore-case",
+        help = "Make search case insensitive"
+    )]
     pub case_insensitive: bool,
 
     #[structopt(short = "n", long = "line-number", help = "Show line number")]
     pub show_line_number: bool,
 
-    #[structopt(short = "c", long = "color", help = "Activate color in output")]
+    #[structopt(long = "color", help = "Activate color in output")]
     pub display_color: bool,
+
+    #[structopt(
+        short = "v",
+        long = "invert-match",
+        help = "Invert the sense of matching"
+    )]
+    pub invert_match: bool,
+
+    #[structopt(
+        short = "c",
+        long = "count",
+        help = "Suppress normal output; instead print a count of matching lines for each input file"
+    )]
+    pub count: bool,
+
+    #[structopt(
+        short = "s",
+        long = "stats",
+        help = "Display match statistics at the end"
+    )]
+    pub stats: bool,
 }
 
 impl Cli {
@@ -32,7 +57,12 @@ impl Cli {
     }
 
     fn is_matches(&self, line: &str) -> bool {
-        self.get_regex().is_match(line)
+        let matches = self.get_regex().is_match(line);
+        if self.invert_match {
+            !matches
+        } else {
+            matches
+        }
     }
 
     fn colorize(&self, color: Colour, text: &str) -> String {
@@ -106,21 +136,28 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
         let results = config.search(&content);
 
         if results.len() > 0 {
-            println!("\n{}", config.colorize(Cyan, pathname));
             file_count += 1;
             match_count = match_count + results.len();
-        }
 
-        for line in results {
-            println!("{}", line.fmt_line(&config))
+            if config.count {
+                println!("{}: \t{}", pathname, results.len());
+            } else {
+                println!("\n{}", config.colorize(Cyan, pathname));
+
+                for line in results {
+                    println!("{}", line.fmt_line(&config))
+                }
+            }
         }
     }
 
     if match_count > 0 {
-        println!(
-            "\n{} match(es) found in {} file(s).",
-            match_count, file_count
-        );
+        if config.stats {
+            println!(
+                "\n{} match(es) found in {} file(s).",
+                match_count, file_count
+            );
+        }
     } else {
         println!("There is no result ¯\\(ツ)/¯")
     }
@@ -138,7 +175,10 @@ mod tests {
             path: vec![PathBuf::from("./src/lib.rs")],
             case_insensitive,
             show_line_number: true,
-            display_color: false
+            display_color: false,
+            stats: false,
+            count: false,
+            invert_match: false,
         }
     }
 
