@@ -40,20 +40,24 @@ USAGE:
     hello_grep [FLAGS] [OPTIONS] <pattern> [path]...
 
 FLAGS:
-    -i, --ignore-case     Make search case insensitive
-    -c, --count           Suppress normal output; instead print a count of matching lines for each input file
-        --color           Activate color in output
-        --help            Prints help information
-    -v, --invert-match    Invert the sense of matching
-    -x, --line-regexp     Select only those matches that exactly match the whole line
-    -h, --no-filename     Suppress the prefixing of file names on output. This is the default when there is only one
-                          file to search
-    -n, --line-number     Show line number
-    -s, --stats           Display match statistics at the end
-    -V, --version         Prints version information
+    -i, --ignore-case            Make search case insensitive
+    -c, --count                  Suppress normal output; instead print a count of matching lines for each input file.
+        --color                  Activate color in output.
+    -l, --files-with-matches     Suppress normal output; instead print the name of each input file from which output
+                                 would normally have been printed. The scanning will stop on the first match.
+    -L, --files-without-match    Suppress normal output; instead print the name of each input file from which no output
+                                 would normally have been printed. The scanning will stop on the first match.
+        --help                   Prints help information
+    -v, --invert-match           Invert the sense of matching.
+    -x, --line-regexp            Select only those matches that exactly match the whole line.
+    -h, --no-filename            Suppress the prefixing of file names on output. This is the default when there is only
+                                 one file to search.
+    -n, --line-number            Show line number.
+    -s, --stats                  Display match statistics at the end.
+    -V, --version                Prints version information
 
 OPTIONS:
-    -m, --max-count <max>    Stop reading a file after NUM matching lines [default: 1000]
+    -m, --max-count <max>    Stop reading a file after NUM matching lines. [default: 1000]
 
 ARGS:
     <pattern>

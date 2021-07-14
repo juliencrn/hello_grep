@@ -24,38 +24,51 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
         let pathname = path.clone();
         let pathname = pathname.to_str().unwrap();
         let content = fs::read_to_string(path)?;
-        let results = search::search(&config, &content);
 
-        if results.len() > 0 {
-            file_count += 1;
-            match_count = match_count + results.len();
+        if config.files_with_matches {
+            if search::search_match(&config, &content) {
+                println!("{}", pathname);
+                printed_count += 1;
+            }
+        } else if config.files_without_match {
+            if !search::search_match(&config, &content) {
+                println!("{}", pathname);
+                printed_count += 1;
+            }
+        } else {
+            let results = search::search_all(&config, &content);
 
-            if config.count {
-                // Display only filenames
-                if printed_count < config.max {
-                    println!("{}: \t{}", pathname, results.len());
-                    printed_count += 1;
-                }
-            } else {
-                // Display matches (title then lines)
-                if printed_count < config.max && !hide_filename {
-                    println!("\n{}", config.colorize(Cyan, pathname));
-                }
+            if results.len() > 0 {
+                file_count += 1;
+                match_count = match_count + results.len();
 
-                for line in results {
+                if config.count {
+                    // Display only filenames
                     if printed_count < config.max {
-                        println!("{}", line.fmt_line(&config));
+                        println!("{}: \t{}", pathname, results.len());
                         printed_count += 1;
+                    }
+                } else {
+                    // Display matches (title then lines)
+                    if printed_count < config.max && !hide_filename {
+                        println!("\n{}", config.colorize(Cyan, pathname));
+                    }
+
+                    for line in results {
+                        if printed_count < config.max {
+                            println!("{}", line.fmt_line(&config));
+                            printed_count += 1;
+                        }
                     }
                 }
             }
         }
     }
 
-    if match_count == 0 {
+    if printed_count == 0 {
         // TODO: Should throw an error and stop the program
         println!("There is no result ¯\\(ツ)/¯");
-    } else if config.stats {
+    } else if config.stats && (!config.files_with_matches || !config.files_without_match) {
         if printed_count != match_count {
             println!(
                 "\n{} match(es) found (including {} hidden) in {} file(s).",
@@ -94,6 +107,8 @@ mod tests {
             line_regexp: false,
             max: 1000,
             no_filename: false,
+            files_with_matches: false,
+            files_without_match: false,
         }
     }
 
@@ -114,7 +129,7 @@ Duct tape.";
 
         let config = create_test_config("duct", false);
         let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
-        let result = search::search(&config, content);
+        let result = search::search_all(&config, content);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
@@ -134,7 +149,7 @@ Trust me.";
             Line::new(1, "Rust:".to_string()),
             Line::new(4, "Trust me.".to_string()),
         ];
-        let result = search::search(&config, content);
+        let result = search::search_all(&config, content);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
