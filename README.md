@@ -3,14 +3,15 @@
 </h3>
 <br /> 
 
-
 # Hello, Grep!
 This personal learning project is just another grep clone, written in Rust.
 
-<br />
-
-![alt](./assets/screenshot.png)
-
+## Summary
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Examples](#examples)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 ## Getting Started
 To get a local copy up and running follow these simple steps.
 
@@ -63,6 +64,47 @@ ARGS:
     <pattern>
     <path>...
 ```
+
+## Examples
+
+### Case sensitive - insensitive (`-i, --ignore-case`)
+
+![](assets/Screenshot-case.png)
+
+### Count matches (`-c, --count`)
+
+![](assets/Screenshot-count-matches.png)
+
+### Files glob
+
+![](assets/Screenshot-glob.png)
+
+### Invert match (`-v, --invert-match`)
+
+![](assets/Screenshot-invert-match.png)
+
+### Show statistics (`-s, --stats`)
+
+![](assets/Screenshot-stats.png)
+
+### RegExp
+
+![](assets/Screenshot-regex-1.png)
+![](assets/Screenshot-regex-2.png)
+![](assets/Screenshot-regex-3.png)
+![](assets/Screenshot-regex-4.png)
+
+### echo output in a file
+
+![](assets/Screenshot-to-file.png)
+
+### Match whole line (`-x, --line-regexp`)
+
+![](assets/Screenshot-whole-line.png)
+
+### Search files (`-l, -L`)
+
+![](assets/Screenshot-files.png)
 
 ## License
 Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.
