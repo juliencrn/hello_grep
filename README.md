@@ -1,39 +1,33 @@
-<h3 align="center">
-    ⚠️  W.I.P.
-</h3>
-<br /> 
+<div align="center">
+<h1>Hello GREP</h1>
 
-# Hello, Grep!
-This personal learning project is just another grep clone, written in Rust.
+A command line mini grep clone app written in Rust.
 
-## Summary
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Examples](#examples)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
-## Getting Started
-To get a local copy up and running follow these simple steps.
+**README Sections:**  [Installation](#installation) - [Options](#options) - [Examples](#examples) - [License](#license) - [Acknowledgements](#acknowledgements)
 
-### Prerequisites
-- This is a `rust` project, so you need have rust working on your machine. 
-- We will use `git` to download the repository.
+<!-- Badges -->
+</div>
 
-### Installation
-1. Clone the repo
-   ```sh
-   git clone https://github.com/juliencrn/hello_grep.git
-   cd hello_grep 
-   ```
-2. Compile and run
-   ```sh
-   cargo run -- -h  # To have documentation
-   cargo test       # Or Run tests
-   cargo run -- -i -n TODO ~/path/to/file # Or exec as grep
-   cargo build --release # Production build
-   ```
+<!-- ![Screenshots of Rusty Journal](screenshots.png) -->
 
-## Usage
+---
+
+## Installation
+
+`hello_grep` is written in [Rust](https://www.rust-lang.org/), so you'll need to grab a Rust installation in order to compile it. The recommended way to install Rust for development is from the [official download page](https://www.rust-lang.org/tools/install), using rustup.
+
+Once Rust is installed, you can compile `hello_grep` with Cargo:
+
+```bash
+$ git clone https://github.com/juliencrn/hello_grep.git
+$ cd hello_grep
+$ cargo build --release
+$ ./target/release/hello_grep --version
+hello_grep 0.1.0
+```
+
+## Options
+
 ```
 hello_grep 0.1.0
 
