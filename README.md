@@ -8,7 +8,7 @@ A command line mini grep clone app written in Rust.
 <!-- Badges -->
 </div>
 
-<!-- ![Screenshots of Rusty Journal](screenshots.png) -->
+![Screenshots of hello_grep](assets/Screenshot-glob.png)
 
 ---
 
