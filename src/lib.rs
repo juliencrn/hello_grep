@@ -131,6 +131,15 @@ mod tests {
         search::get_regex(&config.pattern, config.case_insensitive)
     }
 
+    fn get_test_content() -> &'static str {
+        "\
+Rust:
+safe, fast, productive.
+Pick three.
+Trust me.
+Duct tape."
+    }
+
     #[test]
     fn run_should_not_panic() -> Result<(), String> {
         let config = create_test_config("run", true);
@@ -140,14 +149,9 @@ mod tests {
 
     #[test]
     fn case_sensitive() {
-        let content = "\
-Rust:
-safe, fast, productive.
-Pick three.
-Duct tape.";
-
+        let content = get_test_content();
         let config = create_test_config("duct", false);
-        let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
+        let expected = vec![Line::new(2, "safe, fast, productive.")];
         let regex = create_test_regex(&config);
         let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
 
@@ -158,18 +162,10 @@ Duct tape.";
 
     #[test]
     fn case_insensitive() {
-        let content = "\
-Rust:
-safe, fast, productive.
-Pick three.
-Trust me.";
-
+        let content = get_test_content();
         let config = create_test_config("rUsT", true);
         let regex = create_test_regex(&config);
-        let expected = vec![
-            Line::new(1, "Rust:".to_string()),
-            Line::new(4, "Trust me.".to_string()),
-        ];
+        let expected = vec![Line::new(1, "Rust:"), Line::new(4, "Trust me.")];
         let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
 
         for i in 0..result.len() {

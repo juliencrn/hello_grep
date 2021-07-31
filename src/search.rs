@@ -24,17 +24,17 @@ fn is_matches(regex: &Regex, line: &str, reversed: bool, line_regexp: bool) -> b
     }
 }
 
-pub fn search_all(
+pub fn search_all<'a>(
     regex: &Regex,
-    content: &str,
+    content: &'a str,
     invert_match: bool,
     line_regexp: bool,
-) -> Vec<Line> {
+) -> Vec<Line<'a>> {
     content
         .lines()
         .enumerate()
         .filter(|(_, line)| is_matches(regex, line, invert_match, line_regexp))
-        .map(|(index, line)| Line::new(index, line.to_string()))
+        .map(|(index, line)| Line::new(index, &line))
         .collect()
 }
 
@@ -44,6 +44,5 @@ pub fn search_match(regex: &Regex, content: &str, invert_match: bool, line_regex
             return true;
         }
     }
-
     false
 }

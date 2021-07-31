@@ -5,13 +5,13 @@ use ansi_term::Colour::{Green, Red};
 use regex::Captures;
 
 #[derive(Debug)]
-pub struct Line {
+pub struct Line<'a> {
     pub number: usize,
-    pub content: String,
+    pub content: &'a str,
 }
 
-impl Line {
-    pub fn new(number: usize, content: String) -> Line {
+impl Line<'_> {
+    pub fn new<'a>(number: usize, content: &'a str) -> Line {
         Line { number, content }
     }
 
