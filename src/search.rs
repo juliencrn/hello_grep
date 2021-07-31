@@ -1,45 +1,46 @@
-use crate::cli::Cli;
 use crate::line::Line;
+use regex::{Regex, RegexBuilder};
 
-fn is_matches(config: &Cli, line: &str) -> bool {
-    match config.get_regex().find(line.trim()) {
+pub fn get_regex(pattern: &str, case_insensitive: bool) -> Regex {
+    RegexBuilder::new(&pattern)
+        .case_insensitive(case_insensitive)
+        .build()
+        .expect("Invalid Regex")
+}
+
+fn is_matches(regex: &Regex, line: &str, reversed: bool, line_regexp: bool) -> bool {
+    match regex.find(line.trim()) {
         Some(x) => {
-            if config.line_regexp {
+            if reversed {
+                return false;
+            }
+            if line_regexp {
+                // Compare the len of the result with the original line.len().
                 return x.start() == 0 && x.end() == line.trim().len();
             }
             true
         }
-        None => false,
+        None => reversed,
     }
 }
 
-pub fn search_all(config: &Cli, content: &str) -> Vec<Line> {
-    let mut results: Vec<Line> = vec![];
-
-    for (index, line) in content.lines().enumerate() {
-        let matches = if config.invert_match || config.files_without_match {
-            !is_matches(config, line)
-        } else {
-            is_matches(config, line)
-        };
-
-        if matches {
-            results.push(Line::new(index, line.to_string()));
-        }
-    }
-
-    results
+pub fn search_all(
+    regex: &Regex,
+    content: &str,
+    invert_match: bool,
+    line_regexp: bool,
+) -> Vec<Line> {
+    content
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| is_matches(regex, line, invert_match, line_regexp))
+        .map(|(index, line)| Line::new(index, line.to_string()))
+        .collect()
 }
 
-pub fn search_match(config: &Cli, content: &str) -> bool {
+pub fn search_match(regex: &Regex, content: &str, invert_match: bool, line_regexp: bool) -> bool {
     for line in content.lines() {
-        let matches = if config.invert_match {
-            !is_matches(config, line)
-        } else {
-            is_matches(config, line)
-        };
-
-        if matches {
+        if is_matches(regex, line, invert_match, line_regexp) {
             return true;
         }
     }

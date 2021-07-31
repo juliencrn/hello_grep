@@ -1,42 +1,49 @@
 use ansi_term::Colour::Cyan;
 use std::error::Error;
 use std::fs;
+use std::io::Write;
 
 pub mod cli;
 pub mod line;
 pub mod search;
+pub mod utils;
 
-use self::cli::Cli;
+use self::cli::CommandLineArgs;
+use utils::colorize;
 
-pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
+pub fn run(config: CommandLineArgs, mut writer: impl Write) -> Result<(), Box<dyn Error>> {
     if config.path.len() == 0 {
         // TODO: Should throw an error and stop the program
-        println!("No files found");
+        panic!("No files found");
     }
 
+    let regex = search::get_regex(&config.pattern, config.case_insensitive);
+    let paths = &config.path.to_vec();
+    let hide_filename = config.no_filename || paths.len() == 1;
     let mut file_count: usize = 0;
     let mut match_count: usize = 0;
     let mut printed_count: usize = 0;
-    let paths = &config.path.to_vec();
-    let hide_filename = config.no_filename || paths.len() == 1;
 
     for path in paths {
-        let pathname = path.clone();
-        let pathname = pathname.to_str().unwrap();
-        let content = fs::read_to_string(path)?;
+        let content = fs::read_to_string(&path)?;
+        let pathname = path.to_str().unwrap();
 
-        if config.files_with_matches {
-            if search::search_match(&config, &content) {
-                println!("{}", pathname);
+        // Print files instead of matched lines.
+        if config.files_with_matches || config.files_without_match {
+            if search::search_match(
+                &regex,
+                &content,
+                config.files_without_match,
+                config.line_regexp,
+            ) {
+                writeln!(writer, "{}", &pathname)?;
                 printed_count += 1;
             }
-        } else if config.files_without_match {
-            if !search::search_match(&config, &content) {
-                println!("{}", pathname);
-                printed_count += 1;
-            }
-        } else {
-            let results = search::search_all(&config, &content);
+        }
+        // Print matches
+        else {
+            let results =
+                search::search_all(&regex, &content, config.invert_match, config.line_regexp);
 
             if results.len() > 0 {
                 file_count += 1;
@@ -45,18 +52,22 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
                 if config.count {
                     // Display only filenames
                     if printed_count < config.max {
-                        println!("{}: \t{}", pathname, results.len());
+                        writeln!(writer, "{}: \t{}", pathname, results.len())?;
                         printed_count += 1;
                     }
                 } else {
                     // Display matches (title then lines)
                     if printed_count < config.max && !hide_filename {
-                        println!("\n{}", config.colorize(Cyan, pathname));
+                        writeln!(
+                            writer,
+                            "\n{}",
+                            colorize(Cyan, pathname, config.display_color)
+                        )?;
                     }
 
                     for line in results {
                         if printed_count < config.max {
-                            println!("{}", line.fmt_line(&config));
+                            writeln!(writer, "{}", line.fmt_line(&config))?;
                             printed_count += 1;
                         }
                     }
@@ -67,20 +78,22 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
 
     if printed_count == 0 {
         // TODO: Should throw an error and stop the program
-        println!("There is no result ¯\\(ツ)/¯");
+        writeln!(writer, "There is no result ¯\\(ツ)/¯")?;
     } else if config.stats && (!config.files_with_matches || !config.files_without_match) {
         if printed_count != match_count {
-            println!(
+            writeln!(
+                writer,
                 "\n{} match(es) found (including {} hidden) in {} file(s).",
                 match_count,
                 match_count - printed_count,
                 file_count
-            );
+            )?;
         } else {
-            println!(
+            writeln!(
+                writer,
                 "\n{} match(es) found in {} file(s).",
                 match_count, file_count
-            );
+            )?;
         }
     }
 
@@ -89,13 +102,15 @@ pub fn run(config: Cli) -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use self::cli::Cli;
+    use self::cli::CommandLineArgs;
     use self::line::Line;
     use super::*;
+    use regex::Regex;
+    use std::io::stdout;
     use std::path::PathBuf;
 
-    fn create_test_config(pattern: &str, case_insensitive: bool) -> Cli {
-        Cli {
+    fn create_test_config(pattern: &str, case_insensitive: bool) -> CommandLineArgs {
+        CommandLineArgs {
             pattern: String::from(pattern),
             path: vec![PathBuf::from("./src/lib.rs")],
             case_insensitive,
@@ -112,10 +127,14 @@ mod tests {
         }
     }
 
+    fn create_test_regex(config: &CommandLineArgs) -> Regex {
+        search::get_regex(&config.pattern, config.case_insensitive)
+    }
+
     #[test]
     fn run_should_not_panic() -> Result<(), String> {
         let config = create_test_config("run", true);
-        run(config).unwrap();
+        run(config, &mut stdout()).unwrap();
         Ok(())
     }
 
@@ -129,7 +148,8 @@ Duct tape.";
 
         let config = create_test_config("duct", false);
         let expected = vec![Line::new(2, "safe, fast, productive.".to_string())];
-        let result = search::search_all(&config, content);
+        let regex = create_test_regex(&config);
+        let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)
@@ -145,11 +165,12 @@ Pick three.
 Trust me.";
 
         let config = create_test_config("rUsT", true);
+        let regex = create_test_regex(&config);
         let expected = vec![
             Line::new(1, "Rust:".to_string()),
             Line::new(4, "Trust me.".to_string()),
         ];
-        let result = search::search_all(&config, content);
+        let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
 
         for i in 0..result.len() {
             assert_eq!(expected[i].content, result[i].content)

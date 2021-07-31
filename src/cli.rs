@@ -1,10 +1,12 @@
-use ansi_term::Colour;
-use regex::{Regex, RegexBuilder};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-pub struct Cli {
+#[structopt(
+    name = "hello_grep",
+    about = "A command line mini grep clone app written in Rust."
+)]
+pub struct CommandLineArgs {
     pub pattern: String,
 
     #[structopt(parse(from_os_str))]
@@ -79,21 +81,4 @@ pub struct Cli {
         help = "Suppress normal output; instead print the name of each input file from which output would normally have been printed. The scanning will stop on the first match."
     )]
     pub files_with_matches: bool,
-}
-
-impl Cli {
-    pub fn get_regex(&self) -> Regex {
-        RegexBuilder::new(&self.pattern)
-            .case_insensitive(self.case_insensitive)
-            .build()
-            .expect("Invalid Regex")
-    }
-
-    pub fn colorize(&self, color: Colour, text: &str) -> String {
-        if self.display_color {
-            format!("{}", color.paint(text))
-        } else {
-            text.to_string()
-        }
-    }
 }

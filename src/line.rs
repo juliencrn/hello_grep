@@ -1,7 +1,8 @@
+use crate::cli::CommandLineArgs;
+use crate::search;
+use crate::utils::colorize;
 use ansi_term::Colour::{Green, Red};
 use regex::Captures;
-
-use crate::cli::Cli;
 
 #[derive(Debug)]
 pub struct Line {
@@ -14,9 +15,10 @@ impl Line {
         Line { number, content }
     }
 
-    pub fn fmt_line(&self, config: &Cli) -> String {
-        let regex = config.get_regex();
-        let colorize_pattern = |c: &Captures| format!("{}", config.colorize(Red, &c[0]));
+    pub fn fmt_line(&self, config: &CommandLineArgs) -> String {
+        let regex = search::get_regex(&config.pattern, config.case_insensitive);
+        let colorize_pattern =
+            |c: &Captures| format!("{}", colorize(Red, &c[0], config.display_color));
         let formatted_line = format!(
             "\t{}",
             regex
@@ -26,7 +28,7 @@ impl Line {
         );
 
         if config.show_line_number {
-            let line_number = config.colorize(Green, &self.number.to_string());
+            let line_number = colorize(Green, &self.number.to_string(), config.display_color);
             format!("{}: {}", line_number, formatted_line)
         } else {
             format!("{}", formatted_line)
