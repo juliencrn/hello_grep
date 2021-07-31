@@ -30,7 +30,7 @@ pub fn run(config: CommandLineArgs, mut writer: impl Write) -> Result<(), Box<dy
 
         // Print files instead of matched lines.
         if config.files_with_matches || config.files_without_match {
-            if search::search_match(
+            if search::has_match(
                 &regex,
                 &content,
                 config.files_without_match,
@@ -43,7 +43,7 @@ pub fn run(config: CommandLineArgs, mut writer: impl Write) -> Result<(), Box<dy
         // Print matches
         else {
             let results =
-                search::search_all(&regex, &content, config.invert_match, config.line_regexp);
+                search::get_all_matches(&regex, &content, config.invert_match, config.line_regexp);
 
             if results.len() > 0 {
                 file_count += 1;
@@ -103,9 +103,7 @@ pub fn run(config: CommandLineArgs, mut writer: impl Write) -> Result<(), Box<dy
 #[cfg(test)]
 mod tests {
     use self::cli::CommandLineArgs;
-    use self::line::Line;
     use super::*;
-    use regex::Regex;
     use std::io::stdout;
     use std::path::PathBuf;
 
@@ -127,49 +125,10 @@ mod tests {
         }
     }
 
-    fn create_test_regex(config: &CommandLineArgs) -> Regex {
-        search::get_regex(&config.pattern, config.case_insensitive)
-    }
-
-    fn get_test_content() -> &'static str {
-        "\
-Rust:
-safe, fast, productive.
-Pick three.
-Trust me.
-Duct tape."
-    }
-
     #[test]
     fn run_should_not_panic() -> Result<(), String> {
         let config = create_test_config("run", true);
         run(config, &mut stdout()).unwrap();
         Ok(())
-    }
-
-    #[test]
-    fn case_sensitive() {
-        let content = get_test_content();
-        let config = create_test_config("duct", false);
-        let expected = vec![Line::new(2, "safe, fast, productive.")];
-        let regex = create_test_regex(&config);
-        let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
-
-        for i in 0..result.len() {
-            assert_eq!(expected[i].content, result[i].content)
-        }
-    }
-
-    #[test]
-    fn case_insensitive() {
-        let content = get_test_content();
-        let config = create_test_config("rUsT", true);
-        let regex = create_test_regex(&config);
-        let expected = vec![Line::new(1, "Rust:"), Line::new(4, "Trust me.")];
-        let result = search::search_all(&regex, content, config.invert_match, config.line_regexp);
-
-        for i in 0..result.len() {
-            assert_eq!(expected[i].content, result[i].content)
-        }
     }
 }
